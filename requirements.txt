@@ -1,1 +1,3 @@
-pyspark
+pyspark[sql]
+pyspark-stubs
+aws-sdk-python
