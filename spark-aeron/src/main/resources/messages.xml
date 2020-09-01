@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+  ~ Copyright 2019-2020 Shaun Laurens.
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~ http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<sbe:messageSchema xmlns:sbe="http://fixprotocol.io/2016/sbe"
+                   package="co.scifin.engine.sbe"
+                   id="688"
+                   version="1"
+                   semanticVersion="0.1"
+                   description="Order Messages"
+                   byteOrder="littleEndian">
+    <types>
+        <composite name="messageHeader" description="Message identifiers and length of message root">
+            <type name="blockLength" primitiveType="uint16"/>
+            <type name="templateId" primitiveType="uint16"/>
+            <type name="schemaId" primitiveType="uint16"/>
+            <type name="version" primitiveType="uint16"/>
+        </composite>
+        <composite name="varStringEncoding">
+            <type name="length" primitiveType="uint32" maxValue="1073741824"/>
+            <type name="varData" primitiveType="uint8" length="0" characterEncoding="UTF-8"/>
+        </composite>
+        <enum name="SampleEnum" encodingType="int32">
+            <validValue name="VALUE_1">1</validValue>
+            <validValue name="VALUE_2">2</validValue>
+            <validValue name="VALUE_3">3</validValue>
+        </enum>
+    </types>
+    <types>
+        <type name="Sequence" primitiveType="int64"/>
+    </types>
+
+    <sbe:message name="AeronEvent" id="1" description="Aeron Event">
+        <field name="sequence" id="1" type="Sequence"/>
+        <field name="enumField" id="2" type="SampleEnum"/>
+        <data name="message" id="3" type="varStringEncoding"/>
+    </sbe:message>
+
+
+</sbe:messageSchema>
