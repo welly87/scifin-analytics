@@ -57,6 +57,4 @@ class AeronEventSubscriber(private val receiver: Receiver<AeronEvent>, private v
 
         return AeronEvent(lastValue, enumField, message)
     }
-
-
 }

@@ -10,11 +10,13 @@ import org.apache.spark.streaming.receiver.Receiver
 
 class AeronEvent(lastValue: Long, enumField: Long, message: String?)
 
-class CustomReceiver : Receiver<AeronEvent>(StorageLevel.MEMORY_AND_DISK_2())
+class AeronReceiver : Receiver<AeronEvent>(StorageLevel.MEMORY_AND_DISK_2())
 {
     override fun onStart()
     {
-        val mediaDriverCtx: MediaDriver.Context = MediaDriver.Context().dirDeleteOnStart(true).dirDeleteOnShutdown(true)
+        val mediaDriverCtx = MediaDriver.Context()
+                .dirDeleteOnStart(true)
+                .dirDeleteOnShutdown(true)
 
         val mediaDriver = MediaDriver.launchEmbedded(mediaDriverCtx)
 

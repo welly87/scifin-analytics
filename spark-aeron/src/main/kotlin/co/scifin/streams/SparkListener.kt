@@ -8,12 +8,43 @@ import org.apache.spark.streaming.api.java.JavaStreamingContext
 
 fun main()
 {
-    val sparkConf = SparkConf().setAppName("Aeron Subscriber")
+    val sparkConf = SparkConf()
+            .setMaster("local[*]")
+            .setAppName("Aeron Subscriber")
     val ssc = JavaStreamingContext(sparkConf, Duration(1000))
 
-    val lines = ssc.receiverStream(CustomReceiver())
+    val events = ssc.receiverStream(AeronReceiver())
 
-    val spark = SparkSession.builder().appName("Aeron Subscriber").orCreate
+    events.foreachRDD { rdd, time ->
 
+        val spark = SparkSessionSingleton.getInstance(rdd.context().conf)!!
 
+        val events = spark.createDataFrame(rdd, AeronEvent::class.java)
+
+        events.createOrReplaceTempView("aerons")
+
+        val df = spark.sql("select * from aerons")
+
+        println("========= $time=========")
+        df.show()
+    }
+
+    ssc.start()
+    ssc.awaitTermination()
+}
+
+internal object SparkSessionSingleton
+{
+    @Transient
+    private var instance: SparkSession? = null
+
+    fun getInstance(sparkConf: SparkConf?): SparkSession?
+    {
+        if (instance == null)
+        {
+            instance = SparkSession.builder().config(sparkConf).orCreate
+        }
+
+        return instance
+    }
 }
