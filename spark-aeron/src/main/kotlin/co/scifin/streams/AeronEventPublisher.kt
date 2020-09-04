@@ -4,78 +4,116 @@ import co.scifin.engine.sbe.AeronEventEncoder
 import co.scifin.engine.sbe.MessageHeaderEncoder
 import co.scifin.engine.sbe.SampleEnum
 import io.aeron.Aeron
+import io.aeron.Publication
 import io.aeron.driver.MediaDriver
-import org.agrona.concurrent.SleepingIdleStrategy
 import org.agrona.concurrent.UnsafeBuffer
 import java.nio.ByteBuffer
+import java.util.concurrent.TimeUnit
 
-
-class AeronEventPublisher(private val aeron: Aeron)
+class AeronEventPublisher
 {
-    private var encoder: AeronEventEncoder = AeronEventEncoder()
-    private var messageHeaderEncoder: MessageHeaderEncoder = MessageHeaderEncoder()
-
-    private var unsafeBuffer: UnsafeBuffer? = null
-    private var currentCountItem = 1
-
     fun start()
     {
-        val channel = "aeron:ipc"
-        val stream = 10
+        val mediaDriverCtx = MediaDriver.Context()
+                .dirDeleteOnStart(true)
+                .dirDeleteOnShutdown(true)
 
-        val pub = aeron.addPublication(channel, stream)
-        val idle = SleepingIdleStrategy()
+        val mediaDriver = MediaDriver.launchEmbedded(mediaDriverCtx)
 
-        println("publication created")
+        val ctx = Aeron.Context()
+                .aeronDirectoryName(mediaDriver.aeronDirectoryName())
 
-        while (true)
+        println("trying to connect...")
+        val aeron = Aeron.connect(ctx)
+
+        println("connected...")
+
+        val channel = "aeron:udp?endpoint=localhost:20121"
+        val stream = 1001
+
+        val publication = aeron.addPublication(channel, stream)
+
+        for (i in 0 until 1000)
         {
-            createFakeEvent()
+            val message = "Hello World! $i"
+//            val messageBytes = message.toByteArray()
 
-            if (pub.offer(unsafeBuffer) > 0)
+            val unsafeBuffer = UnsafeBuffer(ByteBuffer.allocateDirect(128))
+
+            val encoder = AeronEventEncoder()
+            val messageHeaderEncoder = MessageHeaderEncoder()
+
+            encoder.wrapAndApplyHeader(unsafeBuffer, 0, messageHeaderEncoder)
+            encoder.sequence(1)
+            encoder.enumField(SampleEnum.VALUE_1)
+            encoder.message("New Order")
+
+            val result = publication.offer(unsafeBuffer)
+
+//            val result: Long = publication.offer(BasicPublisher.BUFFER, 0, messageBytes.size)
+            if (result < 0L)
             {
-                println("sent: $currentCountItem")
-                currentCountItem += 1
+                if (result == Publication.BACK_PRESSURED)
+                {
+                    println("Offer failed due to back pressure")
+                }
+                else if (result == Publication.NOT_CONNECTED)
+                {
+                    println("Offer failed because publisher is not connected to subscriber")
+                }
+                else if (result == Publication.ADMIN_ACTION)
+                {
+                    println("Offer failed because of an administration action in the system")
+                }
+                else if (result == Publication.CLOSED)
+                {
+                    println("Offer failed publication is closed")
+                    break
+                }
+                else if (result == Publication.MAX_POSITION_EXCEEDED)
+                {
+                    println("Offer failed due to publication reaching max position")
+                    break
+                }
+                else
+                {
+                    println("Offer failed due to unknown reason: $result")
+                }
             }
-
-            Thread.sleep(2000)
+            else
+            {
+                println("yay!")
+            }
+            if (!publication.isConnected)
+            {
+                println("No active subscribers detected")
+            }
+            Thread.sleep(TimeUnit.SECONDS.toMillis(1))
         }
+
+        println("Done sending.")
+
+        println("Lingering for ")
+
+        Thread.sleep(3000)
     }
+//
+//        val sendAgent = SendAgent(pub)
+//
+//        val idle = SleepingIdleStrategy()
+//
+//        val sendAgentRunner = AgentRunner(idle, { obj: Throwable -> obj.printStackTrace() }, null, sendAgent)
+//
+//        AgentRunner.startOnThread(sendAgentRunner)
 
-    private fun createFakeEvent()
-    {
-        println("fake event created")
-
-        // TODO should reuse buffer, but this one is only fake/test, ignore this
-        unsafeBuffer = UnsafeBuffer(ByteBuffer.allocateDirect(128))
-
-        encoder = AeronEventEncoder()
-        messageHeaderEncoder = MessageHeaderEncoder()
-
-        encoder.wrapAndApplyHeader(unsafeBuffer, 0, messageHeaderEncoder)
-        encoder.sequence(1)
-        encoder.enumField(SampleEnum.VALUE_1)
-        encoder.message("New Order")
-    }
+//        Thread.sleep(3000)
 }
+//}
 
 
 fun main()
 {
-    val mediaDriverCtx = MediaDriver.Context()
-            .dirDeleteOnStart(true)
-            .dirDeleteOnShutdown(true)
-
-    val mediaDriver = MediaDriver.launchEmbedded(mediaDriverCtx)
-
-    val aeronCtx = Aeron.Context()
-            .aeronDirectoryName(mediaDriver.aeronDirectoryName())
-
-    println("trying to connect...")
-    val aeron = Aeron.connect(aeronCtx)
-
-    println("connected...")
-    val publisher = AeronEventPublisher(aeron)
+    val publisher = AeronEventPublisher()
 
     publisher.start()
 }

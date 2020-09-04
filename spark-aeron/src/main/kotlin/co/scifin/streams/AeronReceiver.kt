@@ -7,8 +7,9 @@ import org.agrona.concurrent.AgentRunner
 import org.agrona.concurrent.SleepingIdleStrategy
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.receiver.Receiver
+import java.io.Serializable
 
-class AeronEvent(lastValue: Long, enumField: Long, message: String?)
+data class AeronEvent(val lastValue: Long, val enumField: Long, val message: String?): Serializable
 
 class AeronReceiver : Receiver<AeronEvent>(StorageLevel.MEMORY_AND_DISK_2())
 {
@@ -23,13 +24,14 @@ class AeronReceiver : Receiver<AeronEvent>(StorageLevel.MEMORY_AND_DISK_2())
         val aeronCtx = Aeron.Context().aeronDirectoryName(mediaDriver.aeronDirectoryName())
         val aeron = Aeron.connect(aeronCtx)
 
-        val channel = "aeron:ipc"
-        val stream = 10
+        val channel = "aeron:udp?endpoint=localhost:20121"
+        val stream = 1001
         val subscription: Subscription = aeron.addSubscription(channel, stream)
 
         val receiveAgentRunner = AgentRunner(SleepingIdleStrategy(), { obj: Throwable -> obj.printStackTrace() }, null, AeronEventSubscriber(this, subscription))
 
         AgentRunner.startOnThread(receiveAgentRunner)
+
     }
 
 

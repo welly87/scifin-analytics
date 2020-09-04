@@ -41,6 +41,8 @@ class AeronEventSubscriber(private val receiver: Receiver<AeronEvent>, private v
 
         val aeronEvent = createAeronEvent(buffer, bufferOffset)
 
+        println(aeronEvent)
+
         receiver.store(aeronEvent)
     }
 
