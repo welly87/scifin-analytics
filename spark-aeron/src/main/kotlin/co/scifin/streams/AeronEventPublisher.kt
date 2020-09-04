@@ -36,7 +36,6 @@ class AeronEventPublisher
         for (i in 0 until 1000)
         {
             val message = "Hello World! $i"
-//            val messageBytes = message.toByteArray()
 
             val unsafeBuffer = UnsafeBuffer(ByteBuffer.allocateDirect(128))
 
@@ -50,7 +49,6 @@ class AeronEventPublisher
 
             val result = publication.offer(unsafeBuffer)
 
-//            val result: Long = publication.offer(BasicPublisher.BUFFER, 0, messageBytes.size)
             if (result < 0L)
             {
                 if (result == Publication.BACK_PRESSURED)
@@ -97,19 +95,7 @@ class AeronEventPublisher
 
         Thread.sleep(3000)
     }
-//
-//        val sendAgent = SendAgent(pub)
-//
-//        val idle = SleepingIdleStrategy()
-//
-//        val sendAgentRunner = AgentRunner(idle, { obj: Throwable -> obj.printStackTrace() }, null, sendAgent)
-//
-//        AgentRunner.startOnThread(sendAgentRunner)
-
-//        Thread.sleep(3000)
 }
-//}
-
 
 fun main()
 {

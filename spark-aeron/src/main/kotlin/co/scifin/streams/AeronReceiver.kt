@@ -34,10 +34,8 @@ class AeronReceiver : Receiver<AeronEvent>(StorageLevel.MEMORY_AND_DISK_2())
 
     }
 
-
     override fun onStop()
     {
         TODO("Not yet implemented")
     }
-
 }
